@@ -1,4 +1,4 @@
-import { X, Calendar, Clock, User, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { X, Calendar, User, CheckCircle, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Room } from "../types";
 

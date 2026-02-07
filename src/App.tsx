@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Room } from "./types";
 import { Layout } from "./components/Layout";
 import { StatsGrid } from "./components/StatsGrid";
@@ -43,24 +43,20 @@ function App() {
   const API_BASE_URL =
     import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5250/api";
 
-  useEffect(() => {
-    fetchData();
-  }, [refreshTrigger]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [roomsRes, bookingsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/rooms`),
         fetch(`${API_BASE_URL}/bookings`),
       ]);
 
-      const roomsData = await roomsRes.json();
-      const bookingsData = await bookingsRes.json();
+      const roomsData: Room[] = await roomsRes.json();
+      const bookingsData: Booking[] = await bookingsRes.json();
 
       setRooms(roomsData);
 
       // Sort: Pending first, then by Id descending (newest first)
-      const sortedBookings = bookingsData.sort((a: any, b: any) => {
+      const sortedBookings = [...bookingsData].sort((a, b) => {
         if (a.status === 'Pending' && b.status !== 'Pending') return -1;
         if (a.status !== 'Pending' && b.status === 'Pending') return 1;
         return b.id - a.id;
@@ -69,7 +65,11 @@ function App() {
     } catch (error) {
       console.error("Error fetching data:", error);
     }
-  };
+  }, [API_BASE_URL]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData, refreshTrigger]);
 
   const handleStatusUpdate = async (id: number, newStatus: string) => {
     setProcessingId(id);
