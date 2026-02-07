@@ -5,6 +5,8 @@ import { StatsGrid } from "./components/StatsGrid";
 import { RoomGrid } from "./components/RoomGrid";
 import { BookingTable } from "./components/BookingTable";
 import { BookingFormModal } from "./components/BookingFormModal";
+import { BookingDetailModal } from "./components/BookingDetailModal";
+import { RoomScheduleModal } from "./components/RoomScheduleModal";
 import { Plus } from "lucide-react";
 
 interface Booking {
@@ -22,6 +24,13 @@ function App() {
   const [bookings, setBookings] = useState<Booking[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // Room Schedule Modal State
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const [processingId, setProcessingId] = useState<number | null>(null);
@@ -48,7 +57,14 @@ function App() {
       const bookingsData = await bookingsRes.json();
 
       setRooms(roomsData);
-      setBookings(bookingsData);
+
+      // Sort: Pending first, then by Id descending (newest first)
+      const sortedBookings = bookingsData.sort((a: any, b: any) => {
+        if (a.status === 'Pending' && b.status !== 'Pending') return -1;
+        if (a.status !== 'Pending' && b.status === 'Pending') return 1;
+        return b.id - a.id;
+      });
+      setBookings(sortedBookings);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -65,8 +81,35 @@ function App() {
 
       if (response.ok) {
         setRefreshTrigger((prev) => prev + 1);
+        if (selectedBooking && selectedBooking.id === id) {
+          setSelectedBooking({ ...selectedBooking, status: newStatus });
+          if (newStatus === 'Cancelled') setIsDetailOpen(false); // Close if cancelled by user
+        }
       } else {
         alert("Failed to update status");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Connection error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeleteBooking = async (id: number) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus data ini secara permanen?")) return;
+
+    setProcessingId(id);
+    try {
+      const response = await fetch(`${API_URL}/bookings/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setRefreshTrigger(prev => prev + 1);
+        setIsDetailOpen(false);
+      } else {
+        alert("Failed to delete booking");
       }
     } catch (error) {
       console.error(error);
@@ -102,7 +145,14 @@ function App() {
 
       <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Rooms Status</h2>
-        <RoomGrid rooms={rooms} />
+        <RoomGrid
+          rooms={rooms}
+          bookings={bookings}
+          onRoomClick={(room) => {
+            setSelectedRoom(room);
+            setIsScheduleOpen(true);
+          }}
+        />
       </div>
 
       <div>
@@ -146,6 +196,10 @@ function App() {
             return matchesSearch && matchesRoom && matchesDate;
           })}
           onStatusUpdate={handleStatusUpdate}
+          onView={(booking) => {
+            setSelectedBooking(booking);
+            setIsDetailOpen(true);
+          }}
           processing={processingId}
         />
       </div>
@@ -155,6 +209,22 @@ function App() {
         onClose={() => setIsModalOpen(false)}
         rooms={rooms}
         onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+      />
+
+      <BookingDetailModal
+        booking={selectedBooking}
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        onStatusUpdate={handleStatusUpdate}
+        onDelete={handleDeleteBooking}
+        processing={processingId === selectedBooking?.id}
+      />
+
+      <RoomScheduleModal
+        room={selectedRoom}
+        bookings={bookings}
+        isOpen={isScheduleOpen}
+        onClose={() => setIsScheduleOpen(false)}
       />
     </Layout>
   );
