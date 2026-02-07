@@ -40,7 +40,8 @@ function App() {
   const [roomFilter, setRoomFilter] = useState("All");
   const [dateFilter, setDateFilter] = useState("");
 
-  const API_URL = "http://localhost:5250/api";
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5250/api";
 
   useEffect(() => {
     fetchData();
@@ -49,8 +50,8 @@ function App() {
   const fetchData = async () => {
     try {
       const [roomsRes, bookingsRes] = await Promise.all([
-        fetch(`${API_URL}/rooms`),
-        fetch(`${API_URL}/bookings`),
+        fetch(`${API_BASE_URL}/rooms`),
+        fetch(`${API_BASE_URL}/bookings`),
       ]);
 
       const roomsData = await roomsRes.json();
@@ -73,7 +74,7 @@ function App() {
   const handleStatusUpdate = async (id: number, newStatus: string) => {
     setProcessingId(id);
     try {
-      const response = await fetch(`${API_URL}/bookings/${id}/status`, {
+      const response = await fetch(`${API_BASE_URL}/bookings/${id}/status`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newStatus),
@@ -101,7 +102,7 @@ function App() {
 
     setProcessingId(id);
     try {
-      const response = await fetch(`${API_URL}/bookings/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/bookings/${id}`, {
         method: "DELETE",
       });
 

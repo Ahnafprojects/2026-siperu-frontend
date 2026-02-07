@@ -19,7 +19,9 @@ export const BookingFormModal = ({ isOpen, onClose, rooms, onSuccess }: BookingF
         endTime: "",
     });
     const [loading, setLoading] = useState(false);
-    const API_URL = "http://localhost:5250/api/bookings";
+    const API_BASE_URL =
+        import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5250/api";
+    const API_URL = `${API_BASE_URL}/bookings`;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
