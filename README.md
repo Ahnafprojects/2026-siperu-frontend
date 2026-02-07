@@ -1,4 +1,5 @@
 # SiPeru Frontend
+![CI](https://github.com/Ahnafprojects/2026-siperu-frontend/actions/workflows/ci.yml/badge.svg?branch=develop)
 
 Frontend dashboard untuk manajemen peminjaman ruangan. Aplikasi ini menampilkan ringkasan statistik, status ruangan, daftar peminjaman, serta modal untuk membuat dan mengelola peminjaman.
 
