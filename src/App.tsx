@@ -1,72 +1,162 @@
 import { useEffect, useState } from "react";
 import type { Room } from "./types";
-import BookingForm from "./BookingForm";
-import BookingList from "./BookingList"; // <--- Import Komponen Baru
+import { Layout } from "./components/Layout";
+import { StatsGrid } from "./components/StatsGrid";
+import { RoomGrid } from "./components/RoomGrid";
+import { BookingTable } from "./components/BookingTable";
+import { BookingFormModal } from "./components/BookingFormModal";
+import { Plus } from "lucide-react";
+
+interface Booking {
+  id: number;
+  studentName: string;
+  purpose: string;
+  room: { name: string };
+  startTime: string;
+  endTime: string;
+  status: string;
+}
 
 function App() {
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  // State trigger: Angka yang berubah kalau ada submit sukses -> bikin tabel refresh otomatis
+  const [bookings, setBookings] = useState<Booking[]>([]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const API_URL = "http://localhost:5250/api/rooms";
+  const [processingId, setProcessingId] = useState<number | null>(null);
+
+  // Filter States
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roomFilter, setRoomFilter] = useState("All");
+  const [dateFilter, setDateFilter] = useState("");
+
+  const API_URL = "http://localhost:5250/api";
 
   useEffect(() => {
-    fetchRooms();
-  }, [refreshTrigger]); // Fetch ulang kalau ada perubahan data
+    fetchData();
+  }, [refreshTrigger]);
 
-  const fetchRooms = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch(API_URL);
-      const data = await response.json();
-      setRooms(data);
+      const [roomsRes, bookingsRes] = await Promise.all([
+        fetch(`${API_URL}/rooms`),
+        fetch(`${API_URL}/bookings`),
+      ]);
+
+      const roomsData = await roomsRes.json();
+      const bookingsData = await bookingsRes.json();
+
+      setRooms(roomsData);
+      setBookings(bookingsData);
     } catch (error) {
-      console.error("Error fetching rooms:", error);
-    } finally {
-      setLoading(false);
+      console.error("Error fetching data:", error);
     }
   };
 
+  const handleStatusUpdate = async (id: number, newStatus: string) => {
+    setProcessingId(id);
+    try {
+      const response = await fetch(`${API_URL}/bookings/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newStatus),
+      });
+
+      if (response.ok) {
+        setRefreshTrigger((prev) => prev + 1);
+      } else {
+        alert("Failed to update status");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Connection error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const activeRoomsCount = rooms.filter(r => r.isAvailable).length;
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">
-          🏛️ Sistem Peminjaman Ruangan (SIPERU)
-        </h1>
-        <p className="text-center text-gray-500 mb-8">Pencatatan Terpusat & Monitoring Status</p>
-
-        {/* 1. DAFTAR RUANGAN (Fitur Info) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {rooms.map((room) => (
-            <div key={room.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex justify-between items-start mb-2">
-                <h2 className="text-lg font-bold text-gray-900">{room.name}</h2>
-                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${room.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                   {room.isAvailable ? "Tersedia" : "Penuh"}
-                </span>
-              </div>
-              <p className="text-gray-500 text-xs">Kapasitas: {room.capacity} Org</p>
-            </div>
-          ))}
+    <Layout>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
+          <p className="text-gray-500">Welcome back, Admin</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* 2. FORMULIR (Fitur No. 1: Pencatatan) */}
-          <div className="lg:col-span-1">
-             <BookingForm 
-               rooms={rooms} 
-               onSuccess={() => setRefreshTrigger(prev => prev + 1)} // Refresh tabel setelah submit
-             />
-          </div>
-
-          {/* 3. TABEL RIWAYAT (Fitur No. 2 & 3: Status & Search) */}
-          <div className="lg:col-span-2">
-            <BookingList refreshTrigger={refreshTrigger} />
-          </div>
-        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors shadow-lg shadow-green-500/25"
+        >
+          <Plus className="w-5 h-5" />
+          New Booking
+        </button>
       </div>
-    </div>
+
+      <StatsGrid
+        totalBookings={bookings.length}
+        activeRooms={activeRoomsCount}
+      />
+
+      <div className="mb-8">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Rooms Status</h2>
+        <RoomGrid rooms={rooms} />
+      </div>
+
+      <div>
+        <div className="flex flex-col md:flex-row justify-between items-end mb-4 gap-4">
+          <h2 className="text-xl font-bold text-gray-800">Data Peminjaman</h2>
+
+          <div className="flex gap-3">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Cari mahasiswa..."
+                className="pl-10 pr-4 py-2 rounded-lg glass-input text-sm w-64"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <svg className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <select
+              className="px-4 py-2 rounded-lg glass-input text-sm"
+              value={roomFilter}
+              onChange={(e) => setRoomFilter(e.target.value)}
+            >
+              <option value="All">Semua Ruangan</option>
+              {rooms.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+            </select>
+            <input
+              type="date"
+              className="px-4 py-2 rounded-lg glass-input text-sm"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <BookingTable
+          bookings={bookings.filter(b => {
+            const matchesSearch = b.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              b.purpose.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesRoom = roomFilter === "All" || b.room.name === roomFilter;
+            const matchesDate = !dateFilter || b.startTime.startsWith(dateFilter);
+            return matchesSearch && matchesRoom && matchesDate;
+          })}
+          onStatusUpdate={handleStatusUpdate}
+          processing={processingId}
+        />
+      </div>
+
+      <BookingFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        rooms={rooms}
+        onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+      />
+    </Layout>
   );
 }
 
