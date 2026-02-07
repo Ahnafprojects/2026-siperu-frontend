@@ -5,6 +5,7 @@ import { StatsGrid } from "./components/StatsGrid";
 import { RoomGrid } from "./components/RoomGrid";
 import { BookingTable } from "./components/BookingTable";
 import { BookingFormModal } from "./components/BookingFormModal";
+import { BookingDetailModal } from "./components/BookingDetailModal";
 import { Plus } from "lucide-react";
 
 interface Booking {
@@ -22,6 +23,10 @@ function App() {
   const [bookings, setBookings] = useState<Booking[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Detail Modal State
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const [processingId, setProcessingId] = useState<number | null>(null);
@@ -48,7 +53,14 @@ function App() {
       const bookingsData = await bookingsRes.json();
 
       setRooms(roomsData);
-      setBookings(bookingsData);
+
+      // Sort: Pending first, then by Id descending (newest first)
+      const sortedBookings = bookingsData.sort((a: any, b: any) => {
+        if (a.status === 'Pending' && b.status !== 'Pending') return -1;
+        if (a.status !== 'Pending' && b.status === 'Pending') return 1;
+        return b.id - a.id;
+      });
+      setBookings(sortedBookings);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -65,8 +77,34 @@ function App() {
 
       if (response.ok) {
         setRefreshTrigger((prev) => prev + 1);
+        if (selectedBooking && selectedBooking.id === id) {
+          setSelectedBooking({ ...selectedBooking, status: newStatus });
+        }
       } else {
         alert("Failed to update status");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Connection error");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeleteBooking = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this booking?")) return;
+
+    setProcessingId(id);
+    try {
+      const response = await fetch(`${API_URL}/bookings/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setRefreshTrigger(prev => prev + 1);
+        setIsDetailOpen(false);
+      } else {
+        alert("Failed to delete booking");
       }
     } catch (error) {
       console.error(error);
@@ -146,6 +184,10 @@ function App() {
             return matchesSearch && matchesRoom && matchesDate;
           })}
           onStatusUpdate={handleStatusUpdate}
+          onView={(booking) => {
+            setSelectedBooking(booking);
+            setIsDetailOpen(true);
+          }}
           processing={processingId}
         />
       </div>
@@ -155,6 +197,15 @@ function App() {
         onClose={() => setIsModalOpen(false)}
         rooms={rooms}
         onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+      />
+
+      <BookingDetailModal
+        booking={selectedBooking}
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        onStatusUpdate={handleStatusUpdate}
+        onDelete={handleDeleteBooking}
+        processing={processingId === selectedBooking?.id}
       />
     </Layout>
   );
