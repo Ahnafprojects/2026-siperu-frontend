@@ -1,4 +1,4 @@
-import { X, Check, XCircle, Trash2, Calendar, Clock, User, FileText, MapPin } from "lucide-react";
+import { X, Calendar, Clock, User, FileText, CheckCircle, XCircle, AlertCircle, Trash2, Ban } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Booking {
@@ -23,6 +23,24 @@ interface BookingDetailModalProps {
 export const BookingDetailModal = ({ booking, isOpen, onClose, onStatusUpdate, onDelete, processing }: BookingDetailModalProps) => {
     if (!booking) return null;
 
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'Approved': return 'text-green-600 bg-green-50 border-green-100';
+            case 'Rejected': return 'text-red-600 bg-red-50 border-red-100';
+            case 'Cancelled': return 'text-gray-600 bg-gray-50 border-gray-100';
+            default: return 'text-yellow-600 bg-yellow-50 border-yellow-100';
+        }
+    };
+
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'Approved': return <CheckCircle className="w-5 h-5" />;
+            case 'Rejected': return <XCircle className="w-5 h-5" />;
+            case 'Cancelled': return <Ban className="w-5 h-5" />;
+            default: return <AlertCircle className="w-5 h-5" />;
+        }
+    };
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -37,114 +55,115 @@ export const BookingDetailModal = ({ booking, isOpen, onClose, onStatusUpdate, o
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         className="fixed inset-0 z-50 flex items-center justify-center p-4"
                     >
-                        <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
+                        <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]">
                             {/* Header */}
-                            <div className="relative h-24 bg-gradient-to-r from-green-500 to-emerald-600">
+                            <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50/50">
+                                <div>
+                                    <h2 className="text-xl font-bold text-gray-900">Detail Peminjaman</h2>
+                                    <p className="text-sm text-gray-500 mt-1">ID: #{booking.id}</p>
+                                </div>
                                 <button
                                     onClick={onClose}
-                                    className="absolute top-4 right-4 p-1.5 rounded-full bg-black/10 text-white hover:bg-black/20 transition-colors"
+                                    className="p-2 rounded-full bg-white text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all border border-gray-200 shadow-sm"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
-                                <div className="absolute -bottom-10 left-8">
-                                    <div className="w-20 h-20 rounded-2xl bg-white shadow-lg p-1">
-                                        <div className="w-full h-full rounded-xl bg-gray-50 flex items-center justify-center border border-gray-100">
-                                            <span className="text-2xl font-bold text-gray-800">{booking.room.name.charAt(0)}</span>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-6 space-y-6 overflow-y-auto">
+                                {/* Status Banner */}
+                                <div className={`p-4 rounded-xl border flex items-center gap-3 ${getStatusColor(booking.status)}`}>
+                                    {getStatusIcon(booking.status)}
+                                    <div>
+                                        <p className="font-semibold text-sm">Status: {booking.status}</p>
+                                        {booking.status === 'Pending' && (
+                                            <p className="text-xs opacity-80">Menunggu persetujuan admin</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Details Grid */}
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
+                                        <User className="w-5 h-5 text-gray-400 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs font-semibold text-gray-500 uppercase">Peminjam</p>
+                                            <p className="font-medium text-gray-900">{booking.studentName}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
+                                        <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs font-semibold text-gray-500 uppercase">Keperluan</p>
+                                            <p className="font-medium text-gray-900">{booking.purpose}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
+                                            <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
+                                            <div>
+                                                <p className="text-xs font-semibold text-gray-500 uppercase">Tanggal</p>
+                                                <p className="font-medium text-gray-900">{new Date(booking.startTime).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
+                                            <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
+                                            <div>
+                                                <p className="text-xs font-semibold text-gray-500 uppercase">Waktu</p>
+                                                <p className="font-medium text-gray-900">
+                                                    {new Date(booking.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
+                                                    {new Date(booking.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Body */}
-                            <div className="pt-12 px-8 pb-8">
-                                <div className="flex justify-between items-start mb-6">
-                                    <div>
-                                        <h2 className="text-xl font-bold text-gray-900">{booking.studentName}</h2>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${booking.status === "Approved" ? "bg-green-100 text-green-700 border-green-200" :
-                                                    booking.status === "Rejected" ? "bg-red-100 text-red-700 border-red-200" :
-                                                        "bg-yellow-100 text-yellow-700 border-yellow-200"
-                                                }`}>
-                                                {booking.status}
-                                            </span>
-                                            <span className="text-xs text-gray-500">• ID: #{booking.id}</span>
-                                        </div>
-                                    </div>
-                                    {booking.status !== "Approved" && (
+                            {/* Footer Actions */}
+                            <div className="p-6 border-t border-gray-100 bg-gray-50/50 flex gap-3 justify-end">
+                                {booking.status === 'Pending' ? (
+                                    <>
+                                        {/* Admin Actions */}
                                         <button
-                                            onClick={() => onDelete(booking.id)}
-                                            className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
-                                            title="Delete Booking"
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
-                                    )}
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                            <MapPin className="w-5 h-5 text-blue-500" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-500">Ruangan</p>
-                                            <p className="font-medium text-gray-900">{booking.room.name}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
-                                            <Calendar className="w-5 h-5 text-orange-500" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-500">Waktu</p>
-                                            <p className="font-medium text-gray-900">
-                                                {new Date(booking.startTime).toLocaleDateString("id-ID", {
-                                                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-                                                })}
-                                            </p>
-                                            <p className="text-sm text-gray-600">
-                                                {new Date(booking.startTime).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })}
-                                                {" - "}
-                                                {new Date(booking.endTime).toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' })}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center shrink-0">
-                                            <FileText className="w-5 h-5 text-purple-500" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-500">Keperluan</p>
-                                            <p className="font-medium text-gray-900 leading-relaxed">
-                                                {booking.purpose}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Actions */}
-                                {booking.status === "Pending" && (
-                                    <div className="flex gap-3 mt-8 pt-6 border-t border-gray-100">
-                                        <button
-                                            onClick={() => onStatusUpdate(booking.id, "Rejected")}
+                                            onClick={() => onStatusUpdate(booking.id, 'Rejected')}
                                             disabled={processing}
-                                            className="flex-1 py-2.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 font-medium transition-colors flex items-center justify-center gap-2"
+                                            className="px-4 py-2 rounded-xl bg-red-100 text-red-700 font-medium hover:bg-red-200 transition-colors text-sm disabled:opacity-50"
                                         >
-                                            <XCircle className="w-4 h-4" /> Tolak
+                                            Reject
                                         </button>
                                         <button
-                                            onClick={() => onStatusUpdate(booking.id, "Approved")}
+                                            onClick={() => onStatusUpdate(booking.id, 'Approved')}
                                             disabled={processing}
-                                            className="flex-1 py-2.5 rounded-xl bg-green-600 text-white hover:bg-green-700 font-medium transition-all shadow-lg shadow-green-600/20 flex items-center justify-center gap-2"
+                                            className="px-4 py-2 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700 transition-colors text-sm shadow-lg shadow-green-500/20 disabled:opacity-50"
                                         >
-                                            <Check className="w-4 h-4" /> Setujui
+                                            Approve
                                         </button>
-                                    </div>
+
+                                        {/* User Action: Cancel */}
+                                        <button
+                                            onClick={() => onStatusUpdate(booking.id, 'Cancelled')}
+                                            disabled={processing}
+                                            className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition-colors text-sm disabled:opacity-50 ml-auto"
+                                        >
+                                            Cancel Booking
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        onClick={() => onDelete(booking.id)}
+                                        disabled={processing}
+                                        className="px-4 py-2 rounded-xl bg-gray-100 text-gray-600 font-medium hover:bg-gray-200 hover:text-red-600 transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        Hapus Riwayat
+                                    </button>
                                 )}
                             </div>
                         </div>

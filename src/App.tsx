@@ -6,6 +6,7 @@ import { RoomGrid } from "./components/RoomGrid";
 import { BookingTable } from "./components/BookingTable";
 import { BookingFormModal } from "./components/BookingFormModal";
 import { BookingDetailModal } from "./components/BookingDetailModal";
+import { RoomScheduleModal } from "./components/RoomScheduleModal";
 import { Plus } from "lucide-react";
 
 interface Booking {
@@ -23,9 +24,12 @@ function App() {
   const [bookings, setBookings] = useState<Booking[]>([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  // Detail Modal State
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // Room Schedule Modal State
+  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -79,6 +83,7 @@ function App() {
         setRefreshTrigger((prev) => prev + 1);
         if (selectedBooking && selectedBooking.id === id) {
           setSelectedBooking({ ...selectedBooking, status: newStatus });
+          if (newStatus === 'Cancelled') setIsDetailOpen(false); // Close if cancelled by user
         }
       } else {
         alert("Failed to update status");
@@ -92,7 +97,7 @@ function App() {
   };
 
   const handleDeleteBooking = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this booking?")) return;
+    if (!confirm("Apakah Anda yakin ingin menghapus data ini secara permanen?")) return;
 
     setProcessingId(id);
     try {
@@ -140,7 +145,14 @@ function App() {
 
       <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Rooms Status</h2>
-        <RoomGrid rooms={rooms} />
+        <RoomGrid
+          rooms={rooms}
+          bookings={bookings}
+          onRoomClick={(room) => {
+            setSelectedRoom(room);
+            setIsScheduleOpen(true);
+          }}
+        />
       </div>
 
       <div>
@@ -206,6 +218,13 @@ function App() {
         onStatusUpdate={handleStatusUpdate}
         onDelete={handleDeleteBooking}
         processing={processingId === selectedBooking?.id}
+      />
+
+      <RoomScheduleModal
+        room={selectedRoom}
+        bookings={bookings}
+        isOpen={isScheduleOpen}
+        onClose={() => setIsScheduleOpen(false)}
       />
     </Layout>
   );

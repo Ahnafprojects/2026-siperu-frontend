@@ -80,7 +80,7 @@ export const BookingFormModal = ({ isOpen, onClose, rooms, onSuccess }: BookingF
                                             type="text"
                                             required
                                             placeholder="Nama lengkap..."
-                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500/10 transition-all outline-none bg-gray-50/50 focus:bg-white placeholder:text-gray-400"
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-500/10 transition-all outline-none bg-gray-50/50 focus:bg-white placeholder:text-gray-400 text-gray-900"
                                             value={formData.studentName}
                                             onChange={(e) => setFormData({ ...formData, studentName: e.target.value })}
                                         />
@@ -91,7 +91,7 @@ export const BookingFormModal = ({ isOpen, onClose, rooms, onSuccess }: BookingF
                                             type="text"
                                             required
                                             placeholder="Contoh: Rapat Himpunan"
-                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500/10 transition-all outline-none bg-gray-50/50 focus:bg-white placeholder:text-gray-400"
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-500/10 transition-all outline-none bg-gray-50/50 focus:bg-white placeholder:text-gray-400 text-gray-900"
                                             value={formData.purpose}
                                             onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
                                         />
@@ -127,7 +127,7 @@ export const BookingFormModal = ({ isOpen, onClose, rooms, onSuccess }: BookingF
                                             <input
                                                 type="date"
                                                 required
-                                                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500/10 outline-none bg-white transition-all"
+                                                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/10 outline-none bg-white transition-all text-gray-900"
                                                 onChange={(e) => {
                                                     const date = e.target.value;
                                                     const currentStart = formData.startTime.split("T")[1] || "09:00";
@@ -145,7 +145,7 @@ export const BookingFormModal = ({ isOpen, onClose, rooms, onSuccess }: BookingF
                                             <input
                                                 type="time"
                                                 required
-                                                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500/10 outline-none bg-white transition-all"
+                                                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/10 outline-none bg-white transition-all text-gray-900"
                                                 value={formData.startTime.split("T")[1] || ""}
                                                 onChange={(e) => {
                                                     const time = e.target.value;
@@ -159,7 +159,7 @@ export const BookingFormModal = ({ isOpen, onClose, rooms, onSuccess }: BookingF
                                             <input
                                                 type="time"
                                                 required
-                                                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-500/10 outline-none bg-white transition-all"
+                                                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 text-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/10 outline-none bg-white transition-all text-gray-900"
                                                 value={formData.endTime.split("T")[1] || ""}
                                                 onChange={(e) => {
                                                     const time = e.target.value;
