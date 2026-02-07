@@ -1,21 +1,24 @@
-import { Check, X } from "lucide-react";
+import { Check, X, Eye } from "lucide-react";
 import { GlassCard } from "./GlassCard";
 
 interface Booking {
     id: number;
     studentName: string;
+    purpose: string;
     room: { name: string };
     startTime: string;
+    endTime: string;
     status: string;
 }
 
 interface BookingTableProps {
     bookings: Booking[];
     onStatusUpdate: (id: number, status: string) => void;
+    onView: (booking: Booking) => void;
     processing: number | null;
 }
 
-export const BookingTable = ({ bookings, onStatusUpdate, processing }: BookingTableProps) => {
+export const BookingTable = ({ bookings, onStatusUpdate, onView, processing }: BookingTableProps) => {
     return (
         <GlassCard className="overflow-hidden p-0">
             <div className="p-6 border-b border-gray-100">
@@ -51,26 +54,35 @@ export const BookingTable = ({ bookings, onStatusUpdate, processing }: BookingTa
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    {booking.status === "Pending" && (
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => onStatusUpdate(booking.id, "Approved")}
-                                                disabled={processing === booking.id}
-                                                className="p-1 rounded-md hover:bg-green-100 text-green-600 transition-colors disabled:opacity-50"
-                                                title="Approve"
-                                            >
-                                                <Check className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => onStatusUpdate(booking.id, "Rejected")}
-                                                disabled={processing === booking.id}
-                                                className="p-1 rounded-md hover:bg-red-100 text-red-600 transition-colors disabled:opacity-50"
-                                                title="Reject"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    )}
+                                    <div className="flex items-center justify-end gap-2">
+                                        <button
+                                            onClick={() => onView(booking)}
+                                            className="p-1 rounded-md hover:bg-blue-100 text-blue-600 transition-colors"
+                                            title="View Details"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </button>
+                                        {booking.status === "Pending" && (
+                                            <>
+                                                <button
+                                                    onClick={() => onStatusUpdate(booking.id, "Approved")}
+                                                    disabled={processing === booking.id}
+                                                    className="p-1 rounded-md hover:bg-green-100 text-green-600 transition-colors disabled:opacity-50"
+                                                    title="Approve"
+                                                >
+                                                    <Check className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => onStatusUpdate(booking.id, "Rejected")}
+                                                    disabled={processing === booking.id}
+                                                    className="p-1 rounded-md hover:bg-red-100 text-red-600 transition-colors disabled:opacity-50"
+                                                    title="Reject"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
