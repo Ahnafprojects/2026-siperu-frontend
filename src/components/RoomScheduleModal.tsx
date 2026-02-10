@@ -23,10 +23,58 @@ export const RoomScheduleModal = ({ room, bookings, isOpen, onClose }: RoomSched
     if (!room) return null;
 
     // Filter relevant bookings and sort by time
-    // For simplicity, showing all upcoming bookings. Ideally filter for "Today" or specific range.
+    // Only show today and future dates (hide past dates).
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 0, 0);
     const roomBookings = bookings
         .filter(b => b.room.name === room.name && b.status !== 'Rejected') // Assuming filtering by name or ID if available in Filter
+        .filter(b => new Date(b.startTime).getTime() >= todayStart.getTime())
         .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+    const todayBookings = bookings
+        .filter(b => b.room.name === room.name && b.status === 'Approved')
+        .map(b => ({
+            start: new Date(b.startTime),
+            end: new Date(b.endTime)
+        }))
+        .filter(b => b.start >= todayStart && b.start <= todayEnd)
+        .sort((a, b) => a.start.getTime() - b.start.getTime());
+
+    const formatTime = (d: Date) =>
+        d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+    const getTodaySummary = () => {
+        if (todayBookings.length === 0) return "Kosong seharian";
+
+        const segments: { start: Date; end: Date; type: "busy" | "free" }[] = [];
+        let cursor = new Date(todayStart);
+
+        for (const booking of todayBookings) {
+            if (booking.start > cursor) {
+                segments.push({ start: cursor, end: booking.start, type: "free" });
+            }
+            segments.push({ start: booking.start, end: booking.end, type: "busy" });
+            cursor = booking.end > cursor ? booking.end : cursor;
+        }
+
+        if (cursor < todayEnd) {
+            segments.push({ start: cursor, end: todayEnd, type: "free" });
+        }
+
+        const trimmed = segments.filter((seg, idx) => {
+            const isLeadingFree = idx === 0 && seg.type === "free";
+            const isTrailingFree = idx === segments.length - 1 && seg.type === "free";
+            return !(isLeadingFree || isTrailingFree);
+        });
+
+        if (trimmed.length === 0) return "Kosong seharian";
+
+        return trimmed
+            .map(s => `${formatTime(s.start)}-${formatTime(s.end)} ${s.type === "busy" ? "dipakai" : "kosong"}`)
+            .join(", ");
+    };
 
     return (
         <AnimatePresence>
@@ -54,6 +102,9 @@ export const RoomScheduleModal = ({ room, bookings, isOpen, onClose }: RoomSched
                                         {room.isAvailable ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                                         {room.isAvailable ? 'Tersedia Sekarang' : 'Sedang Digunakan'}
                                     </p>
+                                    <p className="text-xs text-gray-500 mt-2">
+                                        Ringkasan hari ini: {getTodaySummary()}
+                                    </p>
                                 </div>
                                 <button
                                     onClick={onClose}
@@ -70,7 +121,7 @@ export const RoomScheduleModal = ({ room, bookings, isOpen, onClose }: RoomSched
                                 {roomBookings.length === 0 ? (
                                     <div className="text-center py-12 text-gray-400">
                                         <Calendar className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                        <p>Belum ada jadwal untuk ruangan ini.</p>
+                                        <p>Belum ada jadwal mendatang untuk ruangan ini.</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
