@@ -71,16 +71,51 @@ function App() {
     fetchData();
   }, [fetchData, refreshTrigger]);
 
+  const isTimeOverlap = (aStart: string, aEnd: string, bStart: string, bEnd: string) => {
+    const aStartTime = new Date(aStart).getTime();
+    const aEndTime = new Date(aEnd).getTime();
+    const bStartTime = new Date(bStart).getTime();
+    const bEndTime = new Date(bEnd).getTime();
+    return aStartTime < bEndTime && aEndTime > bStartTime;
+  };
+
+  const updateBookingStatus = async (id: number, newStatus: string) => {
+    return fetch(`${API_BASE_URL}/bookings/${id}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newStatus),
+    });
+  };
+
   const handleStatusUpdate = async (id: number, newStatus: string) => {
     setProcessingId(id);
     try {
-      const response = await fetch(`${API_BASE_URL}/bookings/${id}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newStatus),
-      });
+      const response = await updateBookingStatus(id, newStatus);
 
       if (response.ok) {
+        if (newStatus === "Approved") {
+          const approvedBooking = bookings.find(b => b.id === id);
+          if (approvedBooking) {
+            const conflicts = bookings.filter(b =>
+              b.id !== id &&
+              b.status === "Pending" &&
+              b.room?.name === approvedBooking.room?.name &&
+              isTimeOverlap(
+                approvedBooking.startTime,
+                approvedBooking.endTime,
+                b.startTime,
+                b.endTime
+              )
+            );
+
+            if (conflicts.length > 0) {
+              await Promise.all(
+                conflicts.map(conflict => updateBookingStatus(conflict.id, "Rejected"))
+              );
+            }
+          }
+        }
+
         setRefreshTrigger((prev) => prev + 1);
         if (selectedBooking && selectedBooking.id === id) {
           setSelectedBooking({ ...selectedBooking, status: newStatus });
@@ -121,6 +156,7 @@ function App() {
   };
 
   const activeRoomsCount = rooms.filter(r => r.isAvailable).length;
+  const approvedBookingsCount = bookings.filter(b => b.status === "Approved").length;
 
   return (
     <Layout>
@@ -140,7 +176,7 @@ function App() {
       </div>
 
       <StatsGrid
-        totalBookings={bookings.length}
+        totalBookings={approvedBookingsCount}
         activeRooms={activeRoomsCount}
       />
 
@@ -185,6 +221,17 @@ function App() {
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
             />
+            <button
+              type="button"
+              className="px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 w-full sm:w-auto"
+              onClick={() => {
+                setSearchTerm("");
+                setRoomFilter("All");
+                setDateFilter("");
+              }}
+            >
+              Reset Filter
+            </button>
           </div>
         </div>
 
